@@ -1,0 +1,61 @@
+!pip install opencv-contrib-python
+
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import cv2.aruco
+
+# Generate marker of choice
+def generate_marker_image(dictionary, marker_id, marker_size):
+    marker_bits = dictionary.markerSize + 2
+    img_size = marker_size * marker_bits
+    marker_image = np.zeros((img_size, img_size), dtype=np.uint8)
+    
+    img_marker = np.zeros((marker_bits, marker_bits), dtype=np.uint8)
+    img_marker[1:-1, 1:-1] = 255 - (np.unpackbits(dictionary.bytesList[marker_id], bitorder='little')[:16]).reshape((dictionary.markerSize, dictionary.markerSize)) * 255
+    
+    for row in range(marker_bits):
+        for col in range(marker_bits):
+            c = img_marker[row, col]
+            marker_image[row * marker_size: (row + 1) * marker_size,
+                         col * marker_size: (col + 1) * marker_size] = c
+    return marker_image
+
+# Specify dictionary first
+dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
+
+# Specify the marker ID you want to generate
+marker_id = 80
+# Generate the marker image
+marker_size = 200  # pixels
+marker_image = generate_marker_image(dictionary, marker_id, marker_size)
+
+# Save the image using cv2
+cv2.imwrite("marker99.png", marker_image)
+
+# Visualize the marker
+plt.imshow(marker_image, cmap=mpl.cm.gray, interpolation="nearest")
+plt.axis('off')
+plt.show()
+
+# Create a Charuco Board for camera calibration
+
+board = cv2.aruco.CharucoBoard((5, 7), 0.04, 0.03, dictionary)
+board_img = cv2.aruco.drawPlanarBoard(board, (10000, 14000), 1,1)
+
+#board_img = board.draw((10000, 14000))
+cv2.imwrite("charuco_board.png", board_img)
+board_img = cv2.cvtColor(board_img, cv2.COLOR_BAYER_BG2BGR)
+plt.imshow(board_img)
+plt.axis('off')
+
+# Example of how to take picture with your webcam
+
+cam = cv2.VideoCapture(0)
+for i in range(40):
+    ret, frame = cam.read()
+    if ret:
+        frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
+        plt.imshow(frame)
+        plt.show()
